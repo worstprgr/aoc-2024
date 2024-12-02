@@ -16,10 +16,17 @@ struct Distances {
     buffer: Vec<u32>,
 }
 
+#[derive(Debug)]
+struct SimilarityScore {
+    similarity_sum: u32,
+    buffer: Vec<u32>,
+}
+
+
 impl LocationIDs {
-    fn new() -> LocationIDs {
+    fn new(file_name: &str) -> LocationIDs {
         let location_ids = LocationIDs {
-            file_name: PathBuf::from("input.txt"),
+            file_name: PathBuf::from(file_name),
             ids_r: vec![],
             ids_l: vec![],
         };
@@ -58,29 +65,68 @@ impl LocationIDs {
 }
 
 
-fn main() {
-    let mut loc = LocationIDs::new();
-    loc.open_input_file();
-
-    let mut ids_left = loc.ids_l;
-    let mut ids_right = loc.ids_r;
-
-    ids_left.sort();
-    ids_right.sort();
-
-    let mut distances = Distances {
-        distance_sum: 0,
-        buffer: vec![],
-    };
-
-    for (index, id) in ids_left.iter().enumerate() {
-        let right_id = &ids_right[index];
-        let distance = id.abs_diff(*right_id);
-        distances.buffer.push(distance);
+impl Distances {
+    fn new() -> Distances {
+        let distances = Distances {
+            distance_sum: 0,
+            buffer: vec![],
+        };
+        distances
     }
 
-    distances.distance_sum = distances.buffer.iter().sum();
+    fn get_distance(&mut self, location_ids: &mut LocationIDs) -> &Self {
+        let mut ids_left = location_ids.ids_l.clone();
+        ids_left.sort();
+
+        let mut ids_right = location_ids.ids_r.clone();
+        ids_right.sort();
+
+        for (index, id) in ids_left.iter().enumerate() {
+            let right_id = &ids_right[index];
+            let distance = id.abs_diff(*right_id);
+            self.buffer.push(distance);
+        }
+
+        self.distance_sum = self.buffer.iter().sum();
+        self
+    }
+}
+
+
+impl SimilarityScore {
+    fn new() -> SimilarityScore {
+        let similarity_score = SimilarityScore {
+            similarity_sum: 0,
+            buffer: vec![],
+        };
+        similarity_score
+    }
+
+    fn calc_score(&mut self, location_ids: &LocationIDs) -> &Self {
+        let ids_left = location_ids.ids_l.clone();
+        let ids_right = location_ids.ids_r.clone();
+
+        for id in ids_left {
+            let occurence = ids_right.iter().filter(|&v| *v == id).count();
+            let score = id * occurence as u32;
+            self.buffer.push(score);
+        }
+        self.similarity_sum = self.buffer.iter().sum();
+        self
+    }
+}
+
+
+fn main() {
+    let mut loc = LocationIDs::new("input.txt");
+    loc.open_input_file();
+
+    let mut distances = Distances::new();
+    distances.get_distance(&mut loc);
+
+    let mut similarity_score = SimilarityScore::new();
+    similarity_score.calc_score(&loc);
 
     println!("Distance Sum: {}", distances.distance_sum);
-
+    println!("Similarity Score: {}", similarity_score.similarity_sum);
 }
