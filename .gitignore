@@ -1,4 +1,7 @@
 *.o
 prog
 
+notes.md
+
 target/
+01_asm/
